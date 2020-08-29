@@ -1,0 +1,122 @@
+---
+title: "AmazonFetch"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#Web URL
+url <- 'https://www.amazon.co.uk/Going-Postal-Discworld-Novel-33-ebook/product-reviews/B00351YEX0/ref=cm_cr_dp_d_show_all_btm?ie=UTF8&reviewerType=all_reviews'
+
+webpage <- read_html(url)
+```
+
+```{r}
+#Fetch Data
+comment_data <- html_nodes(webpage,'.review-text')
+data <- html_text(comment_data)
+head(data)
+View(data)
+
+```
+
+```{r}
+#Editing Data
+y <- gsub("\n","",data)
+y <- gsub("  ","",y)
+head(y)
+View(y)
+```
+```{r}
+#Sentiment Analysis
+s  <- get_nrc_sentiment(y)
+head(s)
+View(s)
+```
+
+```{r}
+#Sentiment Analysis For Happy 
+get_nrc_sentiment("happy")
+```
+
+```{r}
+#Sentiment analysis of all sentences
+sanalysis <- cbind(y, s)
+View(sanalysis)
+```
+
+```{r}
+#Barplot with rainbow for sentiment analysis
+barplot(colSums(s) , col = rainbow(10))
+```
+```{r}
+#Vectorization
+document <- Corpus(VectorSource(y))
+inspect(document)
+```
+
+```{r}
+#Editing punctuation marks
+toSpace <- content_transformer(function(x,pattern) gsub(pattern, "",x))
+tm_map(document,toSpace,".")
+tm_map(document,toSpace,")")
+tm_map(document,toSpace,":")
+tm_map(document,toSpace,"/")
+```
+
+```{r}
+#Blocking repetitive words
+document <- tm_map(document,removePunctuation)
+inspect(document)
+```
+
+```{r}
+#Word frequency , First we make it into a matrix
+dtm <- TermDocumentMatrix(document)
+m <- as.matrix(dtm)
+aa <- sort(rowSums(m),decreasing = TRUE)
+d <- data.frame(word=names(aa),freq=aa)
+head(d,10)
+```
+
+```{r}
+#Word cloud creation by word frequency
+wordcloud(words = d$word , freq = d$freq , min.freq = 1 , max.words = 200 , random.order = FALSE)
+```
+
+```{r}
+#Words repeated 4 times or more
+findFreqTerms(dtm, lowfreq = 10)
+```
+
+```{r}
+#The ratio of the word 'the' to other words
+findAssocs(dtm, terms = "the" , corlimit = 0.2)
+```
+
+```{r}
+
+#By word frequency, Barplot
+barplot(d[1:10,] $freq , names.arg = d[1:10,] $word)
+
+
+```
+```{r}
+#Negative and positive words we are looking for
+some_text <- c("love it" , "good" , "beautiful" , "hate it")
+sentiment(some_text)
+```
+
+```{r}
+sentiment_by(some_text)
+```
+
+
+```{r}
+#See which word is positive or negative in which index
+extract_sentiment_terms(some_text)
+```
+
+```{r}
+#List of words we search for
+get_sentences(some_text)
+```
